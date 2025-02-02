@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go PasteBin</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Go Paste It</h1>
+            <p>Share your code snippets quickly and easily</p>
+        </header>
+        <main class="paste-form">
+            <form method="POST" action="/paste">
+                <input type="text" name="title" placeholder="Paste title (optional)" class="title-input">
+                <textarea name="content" placeholder="Paste your code or text here..." autofocus required></textarea>
+
+                <label for="expiration">Paste Expiration:</label>
+                <select name="expiration" id="expiration">
+                    <option value="never">Never</option>
+                    <option value="10m">10 Minutes</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="1d">1 Day</option>
+                    <option value="1w">1 Week</option>
+                </select>
+
+                <!-- Password Field -->
+                <div class="form-group">
+                    <input type="checkbox" id="enable-password" name="enable_password">
+                    <label for="enable-password">Password </label>
+                    <div id="password-field" style="display: none;">
+                        <input type="text" name="password" id="password-input" placeholder="Enter a password" class="password-input" style="display: inline-block;">
+                    </div>
+                </div>
+
+                <!-- Burn After Read Field -->
+                <div class="form-group">
+                    <input type="checkbox" id="burn-after-read" name="burn_after_read">
+                    <label for="burn-after-read">Burn after read </label>
+                </div>
+
+                <button type="submit">Create Paste</button>
+            </form>
+        </main>
+    </div>
+</body>
+
+<script>
+    function generateRandomPassword(length = 8) {
+        const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let password = "";
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * charset.length);
+            password += charset[randomIndex];
+        }
+        return password;
+    }
+
+    document.getElementById("enable-password").addEventListener("change", function () {
+        const passwordField = document.getElementById("password-field");
+        const passwordInput = document.getElementById("password-input");
+
+        if (this.checked) {
+            // Show the password field
+            passwordField.style.display = "block";
+
+            // Generate a random alphanumeric password and set it as the default value
+            const randomPassword = generateRandomPassword();
+            passwordInput.value = randomPassword;
+        } else {
+            // Hide the password field and clear the password input
+            passwordField.style.display = "none";
+            passwordInput.value = "";
+        }
+    });
+</script>
+
+</html>
