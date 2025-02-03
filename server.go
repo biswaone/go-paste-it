@@ -35,20 +35,6 @@ func (s *server) handleHomePage(w http.ResponseWriter, r *http.Request) {
 	templates["index.html"].Execute(w, nil)
 }
 
-func (s *server) HandlePaste(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	content := r.FormValue("content")
-	if content == "" {
-		http.Error(w, "Content cannot be empty", http.StatusBadRequest)
-		return
-	}
-	id := "123"
-	http.Redirect(w, r, "/view/"+id, http.StatusSeeOther)
-}
-
 func (s *server) HandleView(w http.ResponseWriter, r *http.Request) {
 	// id := r.URL.Path[len("/view/"):]
 	snippet := "Hello World"
