@@ -35,15 +35,15 @@ func (m *mongoStore) GetSnippet(ctx context.Context, id string) (*Snippet, error
 	return &snippet, nil
 }
 
-func initMongoDB(uri string) (*mongo.Client, error) {
+func initMongoDB(uri string, ctx context.Context) (*mongo.Client, error) {
 	clientOptions := options.Client().ApplyURI(uri)
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	// Ping to verify connection
-	err = client.Ping(context.TODO(), nil)
+	err = client.Ping(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
