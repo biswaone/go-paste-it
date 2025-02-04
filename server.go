@@ -1,16 +1,19 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 )
 
 type server struct {
 	router *http.ServeMux
+	store  store
+	ctx    context.Context
 }
 
-func newServer() (*server, error) {
-	s := &server{}
+func newServer(store store, ctx context.Context) (*server, error) {
+	s := &server{store: store}
 	s.init()
 	return s, nil
 }

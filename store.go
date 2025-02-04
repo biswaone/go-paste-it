@@ -1,0 +1,52 @@
+package main
+
+import (
+	"context"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+type store interface {
+	PutSnippet(ctx context.Context, id string, snippet *Snippet) error
+	GetSnippet(ctx context.Context, id string) (*Snippet, error)
+}
+
+type mongoStore struct {
+	client *mongo.Client
+}
+
+func (m *mongoStore) PutSnippet(ctx context.Context, id string, snippet *Snippet) error {
+	collection := m.client.Database("snippets").Collection("snippets")
+	_, err := collection.InsertOne(ctx, snippet)
+	return err
+}
+
+func (m *mongoStore) GetSnippet(ctx context.Context, id string) (*Snippet, error) {
+	collection := m.client.Database("snippets").Collection("snippets")
+	filter := bson.M{"_id": id}
+
+	var snippet Snippet
+	err := collection.FindOne(ctx, filter).Decode(&snippet)
+	if err != nil {
+		return nil, err
+	}
+	return &snippet, nil
+}
+
+func initMongoDB(uri string) (*mongo.Client, error) {
+	clientOptions := options.Client().ApplyURI(uri)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Ping to verify connection
+	err = client.Ping(context.TODO(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}

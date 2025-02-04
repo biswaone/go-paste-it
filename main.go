@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"log"
@@ -37,9 +38,22 @@ func main() {
 	if err := loadTemplates(); err != nil {
 		log.Fatalf("error loading templates: %v", err)
 	}
-	s, err := newServer()
+	// Initialize MongoDB
+	client, err := initMongoDB("mongodb://localhost:27017")
 	if err != nil {
-		log.Fatalf("error creating server: %v", err)
+		log.Fatalf("Error connecting to MongoDB: %v", err)
+	}
+
+	// Initialize storage layer
+	mongoStore := &mongoStore{client: client}
+
+	appCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Initialize server with store
+	s, err := newServer(mongoStore, appCtx)
+	if err != nil {
+		log.Fatalf("Error creating server: %v", err)
 	}
 
 	log.Println("Server started at :8080")
