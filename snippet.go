@@ -17,6 +17,7 @@ type Snippet struct {
 	Password       *string   `bson:"password,omitempty"`
 	Content        string    `bson:"content"`
 	ViewCount      uint64    `bson:"view_count"`
+	CreatedAt      time.Time `bson:"created_at"`
 }
 
 // NewSnippet creates and initializes a new Snippet instance.
@@ -29,6 +30,7 @@ func NewSnippet(title, content, expiration string, burnAfterRead, enablePassword
 		EnablePassword: enablePassword,
 		Password:       password,
 		Content:        content,
+		CreatedAt:      time.Now(),
 	}
 }
 
