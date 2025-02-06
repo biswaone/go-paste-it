@@ -75,7 +75,10 @@ func (s *server) HandleView(w http.ResponseWriter, r *http.Request) {
 		"Content": snippet.Content,
 	})
 
-	if snippet.BurnAfterRead {
+	if snippet.ViewCount+1 > 1 && snippet.BurnAfterRead {
 		s.store.DeleteSnippet(r.Context(), id)
+	} else {
+		snippet.ViewCount += 1
+		s.store.UpdateSnippet(r.Context(), id, snippet)
 	}
 }
