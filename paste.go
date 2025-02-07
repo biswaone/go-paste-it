@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 )
 
 const maxSnippetSize = 64 * 1024 // 64 KB
@@ -56,6 +57,7 @@ func (s *server) HandlePaste(w http.ResponseWriter, r *http.Request) {
 		EnablePassword: enablePassword,
 		Content:        content,
 		Password:       hashedPassword,
+		CreatedAt:      time.Now(),
 	}
 
 	s.store.PutSnippet(r.Context(), id, &snippet)
