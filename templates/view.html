@@ -17,12 +17,31 @@
             <div class="paste-meta">
                 Created: {{.Created}}
             </div>
-            <pre>{{.Content}}</pre>
+            <pre id="pasteContent">{{.Content}}</pre>
+            <div class="copy-button-container">
+                <button onclick="copyToClipboard()">Copy to Clipboard</button>
+            </div>
         </main>
 
         <a href="/" class="new-paste-link">Create New Paste</a>
-        </main>
     </div>
 </body>
+
+
+<script>
+    function copyToClipboard() {
+        var content = document.getElementById('pasteContent');
+        var range = document.createRange();
+        range.selectNode(content);
+        window.getSelection().removeAllRanges(); // Clear current selection
+        window.getSelection().addRange(range); // Select the text
+        try {
+            document.execCommand('copy'); // Execute the copy command
+        } catch (err) {
+            alert('Failed to copy!');
+        }
+        window.getSelection().removeAllRanges(); // Deselect
+    }
+</script>
 
 </html>

@@ -257,3 +257,14 @@ select:focus, .title-input:focus {
     font-weight: bold;
     padding: 0.2rem 0.5rem;
 }
+
+.copy-button-container {
+    text-align: center; 
+    margin-top: 1rem; 
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
