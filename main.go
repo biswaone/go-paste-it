@@ -6,15 +6,16 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 )
 
-var (
-	templates = make(map[string]*template.Template)
-)
+var templates = make(map[string]*template.Template)
 
 func loadTemplates() error {
-	// Load all templates from the templates folder
 	templateDir := "templates"
 	pattern := filepath.Join(templateDir, "*.html")
 
@@ -31,12 +32,11 @@ func loadTemplates() error {
 		templates[name] = tmpl
 	}
 	return nil
-
 }
 
 func main() {
 	if err := loadTemplates(); err != nil {
-		log.Fatalf("error loading templates: %v", err)
+		log.Fatalf("Error loading templates: %v", err)
 	}
 
 	// Initialize MongoDB
@@ -45,15 +45,44 @@ func main() {
 		log.Fatalf("Error connecting to MongoDB: %v", err)
 	}
 
-	// Initialize storage layer
 	mongoStore := &mongoStore{client: client}
 
-	// Initialize server with store
 	s, err := newServer(mongoStore)
 	if err != nil {
 		log.Fatalf("Error creating server: %v", err)
 	}
 
-	log.Println("Server started at :8080")
-	http.ListenAndServe(":8080", s.router)
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: s.router,
+	}
+
+	// Channel to listen for OS signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		log.Println("Server started at :8080")
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	// Wait for shutdown signal
+	<-stop
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	if err := client.Disconnect(ctx); err != nil {
+		log.Fatalf("Error closing MongoDB connection: %v", err)
+	}
+
+	log.Println("Server stopped gracefully")
 }
