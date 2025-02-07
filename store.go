@@ -39,7 +39,7 @@ func (m *mongoStore) GetSnippet(ctx context.Context, id string) (*Snippet, error
 
 func (m *mongoStore) DeleteSnippet(ctx context.Context, id string) error {
 	collection := m.client.Database("snippets").Collection("snippets")
-	_, err := collection.DeleteOne(ctx, bson.M{"_id": id})
+	_, err := collection.DeleteOne(ctx, bson.M{"id": id})
 	return err
 }
 
@@ -77,4 +77,22 @@ func initMongoDB(uri string, ctx context.Context) (*mongo.Client, error) {
 	}
 
 	return client, nil
+}
+
+func createIndexes(ctx context.Context, client *mongo.Client) error {
+
+	db := client.Database("snippets")
+	collection := db.Collection("snippets")
+
+	// create TTL index on snippet for deletion
+	indexModel := mongo.IndexModel{
+		Keys:    bson.D{{Key: "expiration", Value: 1}},
+		Options: options.Index().SetExpireAfterSeconds(0),
+	}
+	_, err := collection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

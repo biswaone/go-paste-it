@@ -47,6 +47,11 @@ func main() {
 
 	mongoStore := &mongoStore{client: client}
 
+	err = createIndexes(context.Background(), client)
+	if err != nil {
+		log.Fatalf("Failed to create index : %v", err)
+	}
+
 	s, err := newServer(mongoStore)
 	if err != nil {
 		log.Fatalf("Error creating server: %v", err)
