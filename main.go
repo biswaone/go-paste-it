@@ -39,14 +39,20 @@ func main() {
 		log.Fatalf("Error loading templates: %v", err)
 	}
 
+	// Get MongoDB URI from environment variable with fallback
+	// set MONGODB_URI = mongodb://localhost:27017 for local running
+	mongoURI := os.Getenv("MONGODB_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://mongo:27017" // default for Docker environment
+	}
+
 	// Initialize MongoDB
-	client, err := initMongoDB("mongodb://localhost:27017", context.Background())
+	client, err := initMongoDB(mongoURI, context.Background())
 	if err != nil {
 		log.Fatalf("Error connecting to MongoDB: %v", err)
 	}
 
 	mongoStore := &mongoStore{client: client}
-
 	err = createIndexes(context.Background(), client)
 	if err != nil {
 		log.Fatalf("Failed to create index : %v", err)
