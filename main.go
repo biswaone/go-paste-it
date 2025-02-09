@@ -34,7 +34,7 @@ func loadTemplates() error {
 	return nil
 }
 
-func main() {
+func run() error {
 	if err := loadTemplates(); err != nil {
 		log.Fatalf("Error loading templates: %v", err)
 	}
@@ -47,15 +47,15 @@ func main() {
 	}
 
 	// Initialize MongoDB
-	client, err := initMongoDB(mongoURI, context.Background())
+	client, err := initMongoDB(context.Background(), mongoURI)
 	if err != nil {
 		log.Fatalf("Error connecting to MongoDB: %v", err)
 	}
 
-	mongoStore := &mongoStore{client: client}
-	err = createIndexes(context.Background(), client)
+	mongoStore := newMongoStore(client)
+	err = mongoStore.createIndexes(context.Background())
 	if err != nil {
-		log.Fatalf("Failed to create index : %v", err)
+		log.Fatalf("Failed to create indexes: %v", err)
 	}
 
 	s, err := newServer(mongoStore)
@@ -96,4 +96,14 @@ func main() {
 	}
 
 	log.Println("Server stopped gracefully")
+	return nil
+
+}
+
+func main() {
+	err := run()
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+
 }
