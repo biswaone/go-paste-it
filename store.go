@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,21 +17,29 @@ type store interface {
 }
 
 type mongoStore struct {
-	client *mongo.Client
+	client             *mongo.Client
+	snippetsCollection *mongo.Collection
+}
+
+func newMongoStore(client *mongo.Client) *mongoStore {
+	return &mongoStore{
+		client:             client,
+		snippetsCollection: client.Database("GoPasteIt").Collection("snippets"),
+	}
 }
 
 func (m *mongoStore) PutSnippet(ctx context.Context, id string, snippet *Snippet) error {
-	collection := m.client.Database("snippets").Collection("snippets")
-	_, err := collection.InsertOne(ctx, snippet)
-	return err
+	_, err := m.snippetsCollection.InsertOne(ctx, snippet)
+	if err != nil {
+		return fmt.Errorf("failed to Insert Snippet: %w", err)
+	}
+	return nil
 }
 
 func (m *mongoStore) GetSnippet(ctx context.Context, id string) (*Snippet, error) {
-	collection := m.client.Database("snippets").Collection("snippets")
 	filter := bson.M{"id": id}
-
 	var snippet Snippet
-	err := collection.FindOne(ctx, filter).Decode(&snippet)
+	err := m.snippetsCollection.FindOne(ctx, filter).Decode(&snippet)
 	if err != nil {
 		return nil, err
 	}
@@ -38,13 +47,14 @@ func (m *mongoStore) GetSnippet(ctx context.Context, id string) (*Snippet, error
 }
 
 func (m *mongoStore) DeleteSnippet(ctx context.Context, id string) error {
-	collection := m.client.Database("snippets").Collection("snippets")
-	_, err := collection.DeleteOne(ctx, bson.M{"id": id})
-	return err
+	_, err := m.snippetsCollection.DeleteOne(ctx, bson.M{"id": id})
+	if err != nil {
+		return fmt.Errorf("failed to Delete snippet: %w", err)
+	}
+	return nil
 }
 
 func (m *mongoStore) UpdateSnippet(ctx context.Context, id string, snippet *Snippet) error {
-	collection := m.client.Database("snippets").Collection("snippets")
 	filter := bson.M{"id": id}
 
 	update := bson.M{
@@ -59,11 +69,40 @@ func (m *mongoStore) UpdateSnippet(ctx context.Context, id string, snippet *Snip
 		},
 	}
 
-	_, err := collection.UpdateOne(ctx, filter, update)
-	return err
+	_, err := m.snippetsCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to Update snippet: %w", err)
+	}
+	return nil
+
 }
 
-func initMongoDB(uri string, ctx context.Context) (*mongo.Client, error) {
+func (m *mongoStore) createIndexes(ctx context.Context) error {
+
+	// create TTL index on snippet for deletion
+	ttlIndex := mongo.IndexModel{
+		Keys:    bson.D{{Key: "expiration", Value: 1}},
+		Options: options.Index().SetExpireAfterSeconds(0),
+	}
+	_, err := m.snippetsCollection.Indexes().CreateOne(ctx, ttlIndex)
+	if err != nil {
+		return fmt.Errorf("failed to Create TTL Index: %w", err)
+	}
+
+	// create index on id
+	idIndex := mongo.IndexModel{
+		Keys:    bson.D{{Key: "id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err = m.snippetsCollection.Indexes().CreateOne(ctx, idIndex)
+	if err != nil {
+		return fmt.Errorf("failed to Index on Document Id: %w", err)
+	}
+
+	return nil
+}
+
+func initMongoDB(ctx context.Context, uri string) (*mongo.Client, error) {
 	clientOptions := options.Client().ApplyURI(uri)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
@@ -73,26 +112,8 @@ func initMongoDB(uri string, ctx context.Context) (*mongo.Client, error) {
 	// Ping to verify connection
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to verify connection to mongo db: %w", err)
 	}
 
 	return client, nil
-}
-
-func createIndexes(ctx context.Context, client *mongo.Client) error {
-
-	db := client.Database("snippets")
-	collection := db.Collection("snippets")
-
-	// create TTL index on snippet for deletion
-	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "expiration", Value: 1}},
-		Options: options.Index().SetExpireAfterSeconds(0),
-	}
-	_, err := collection.Indexes().CreateOne(ctx, indexModel)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
