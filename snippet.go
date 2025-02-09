@@ -14,14 +14,14 @@ type Snippet struct {
 	Expiration     time.Time `bson:"expiration"`
 	BurnAfterRead  bool      `bson:"burn_after_read"`
 	EnablePassword bool      `bson:"enable_password"`
-	Password       *string   `bson:"password,omitempty"`
+	Password       string    `bson:"password"`
 	Content        string    `bson:"content"`
 	ViewCount      uint64    `bson:"view_count"`
 	CreatedAt      time.Time `bson:"created_at"`
 }
 
 // NewSnippet creates and initializes a new Snippet instance.
-func NewSnippet(title, content, expiration string, burnAfterRead, enablePassword bool, password *string) *Snippet {
+func NewSnippet(title, content, expiration string, burnAfterRead, enablePassword bool, password string) *Snippet {
 	return &Snippet{
 		ID:             generateID([]byte(content)),
 		Title:          title,

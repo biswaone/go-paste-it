@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"time"
 )
@@ -34,17 +35,15 @@ func (s *server) HandlePaste(w http.ResponseWriter, r *http.Request) {
 	enablePassword := r.FormValue("enable_password") == "on"
 	password := r.FormValue("password")
 
-	var hashedPassword *string
+	var hashedPassword string
 	if enablePassword {
-		if password == "" {
-			http.Error(w, "Password cannot be empty", http.StatusBadRequest)
+		var err error
+		hashedPassword, err = hashPassword(password)
+		if err != nil {
+			log.Println(err)
+			http.Error(w, "Internal server Error", http.StatusInternalServerError)
 			return
 		}
-		hashed, err := hashPassword(password)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		hashedPassword = &hashed
 	}
 
 	id := generateID([]byte(content))
@@ -60,7 +59,11 @@ func (s *server) HandlePaste(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:      time.Now(),
 	}
 
-	s.store.PutSnippet(r.Context(), id, &snippet)
+	if err := s.store.PutSnippet(r.Context(), id, &snippet); err != nil {
+		log.Println(err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, "/view/"+id, http.StatusSeeOther)
 }
